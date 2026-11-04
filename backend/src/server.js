@@ -69,12 +69,14 @@ const negocioRoutes = require('./routes/negocio.routes');
 const servicioRoutes = require('./routes/servicio.routes');
 const disponibilidadRoutes = require('./routes/disponibilidad.routes');
 const bloqueRoutes = require('./routes/bloque.routes');
+const reservaRoutes = require('./routes/reserva.routes');
 app.use('/api/auth', authRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/negocios', negocioRoutes);
 app.use('/api', servicioRoutes);
 app.use('/api', disponibilidadRoutes);
 app.use('/api', bloqueRoutes);
+app.use('/api', reservaRoutes);
 
 // Manejo centralizado de rutas 404 y errores
 app.use(notFoundHandler);
