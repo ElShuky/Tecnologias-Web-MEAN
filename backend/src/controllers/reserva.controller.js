@@ -26,4 +26,22 @@ async function cancelar(req, res, next) {
   }
 }
 
-module.exports = { crear, cancelar };
+async function listarCliente(req, res, next) {
+  try {
+    const data = await reservaService.listarReservasCliente(req.user.sub, req.query);
+    return res.json({ success: true, data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function listarNegocio(req, res, next) {
+  try {
+    const data = await reservaService.listarReservasNegocio(req.businessId, req.query);
+    return res.json({ success: true, data });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = { crear, cancelar, listarCliente, listarNegocio };

@@ -46,6 +46,43 @@ function parseDate(value) {
   return date;
 }
 
+function parseCalendarDate(value, field = 'fecha') {
+  if (typeof value !== 'string' || !DATE_REGEX.test(value)) {
+    throw new ValidationError('La fecha debe tener el formato AAAA-MM-DD.', [
+      { field, message: 'Use el formato AAAA-MM-DD.' },
+    ]);
+  }
+  const [year, month, day] = value.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) {
+    throw new ValidationError('La fecha no es válida.', [
+      { field, message: 'La fecha no existe en el calendario.' },
+    ]);
+  }
+  return date;
+}
+
+function formatDate(date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(
+    date.getDate(),
+  ).padStart(2, '0')}`;
+}
+
+function reservationData(reserva) {
+  return {
+    id: reserva._id.toString(),
+    negocioId: reserva.negocioId.toString(),
+    servicioId: reserva.servicioId.toString(),
+    clienteId: reserva.clienteId.toString(),
+    fecha: reserva.fecha,
+    hora: reserva.hora,
+    estado: reserva.estado,
+    notas: reserva.notas,
+    creadoEn: reserva.creadoEn,
+    actualizadoEn: reserva.actualizadoEn,
+  };
+}
+
 function validateInput(data) {
   const details = [];
   if (typeof data !== 'object' || data === null || Array.isArray(data)) {
@@ -135,17 +172,7 @@ async function crearReserva(clienteId, data) {
       estado: 'confirmada',
       notas: data.notas?.trim() || '',
     });
-    return {
-      id: reserva._id.toString(),
-      negocioId: reserva.negocioId.toString(),
-      servicioId: reserva.servicioId.toString(),
-      clienteId: reserva.clienteId.toString(),
-      fecha: reserva.fecha,
-      hora: reserva.hora,
-      estado: reserva.estado,
-      notas: reserva.notas,
-      creadoEn: reserva.creadoEn,
-    };
+    return reservationData(reserva);
   } catch (error) {
     if (error.code === 11000) {
       throw new ConflictError('El bloque seleccionado ya se encuentra reservado.');
@@ -156,14 +183,15 @@ async function crearReserva(clienteId, data) {
 
 async function cancelarReserva(reservaId, auth) {
   ensureObjectId(reservaId, 'reservaId');
-  const reserva = await Reserva.findById(reservaId).select('negocioId estado').lean();
+  const reserva = await Reserva.findById(reservaId).select('negocioId clienteId estado').lean();
   if (!reserva) {
     throw new NotFoundError('La reserva solicitada no fue encontrada.');
   }
-  if (auth.rol === 'admin' && auth.negocioId !== reserva.negocioId.toString()) {
-    throw new ForbiddenError('No tiene permisos sobre esta reserva.');
-  }
-  if (!['admin', 'superadmin'].includes(auth.rol)) {
+  const isOwner = auth.rol === 'cliente' && auth.sub === reserva.clienteId.toString();
+  const isBusinessAdmin =
+    auth.rol === 'superadmin' ||
+    (auth.rol === 'admin' && auth.negocioId === reserva.negocioId.toString());
+  if (!isOwner && !isBusinessAdmin) {
     throw new ForbiddenError('No tiene permisos para cancelar reservas.');
   }
   if (reserva.estado === 'cancelada') {
@@ -179,7 +207,50 @@ async function cancelarReserva(reservaId, auth) {
   return { id: updated._id.toString(), estado: updated.estado };
 }
 
+async function listarReservasCliente(clienteId, query = {}) {
+  ensureObjectId(clienteId, 'clienteId');
+  const filter = { clienteId };
+  if (query.fecha !== undefined) {
+    parseCalendarDate(query.fecha);
+    filter.fecha = query.fecha;
+  }
+  const reservas = await Reserva.find(filter).sort({ fecha: 1, hora: 1 }).lean();
+  return reservas.map(reservationData);
+}
+
+function getWeekRange(value) {
+  const date = parseCalendarDate(value, 'semana');
+  const day = date.getDay();
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const start = new Date(date);
+  start.setDate(date.getDate() + mondayOffset);
+  const end = new Date(start);
+  end.setDate(start.getDate() + 6);
+  return { inicio: formatDate(start), fin: formatDate(end) };
+}
+
+async function listarReservasNegocio(negocioId, query = {}) {
+  ensureObjectId(negocioId, 'negocioId');
+  const filter = { negocioId };
+  if (query.fecha !== undefined && query.semana !== undefined) {
+    throw new ValidationError('Indique fecha o semana, pero no ambos.', [
+      { field: 'fecha', message: 'No se puede combinar con el filtro semana.' },
+    ]);
+  }
+  if (query.fecha !== undefined) {
+    parseCalendarDate(query.fecha);
+    filter.fecha = query.fecha;
+  } else if (query.semana !== undefined) {
+    const { inicio, fin } = getWeekRange(query.semana);
+    filter.fecha = { $gte: inicio, $lte: fin };
+  }
+  const reservas = await Reserva.find(filter).sort({ fecha: 1, hora: 1 }).lean();
+  return reservas.map(reservationData);
+}
+
 module.exports = {
   crearReserva,
   cancelarReserva,
+  listarReservasCliente,
+  listarReservasNegocio,
 };

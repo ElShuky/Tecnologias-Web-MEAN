@@ -58,12 +58,24 @@ async function fixture() {
     passwordHash: 'hash',
     rol: 'cliente',
   });
+  const admin = await Usuario.create({
+    nombre: 'Admin Reserva',
+    correo: 'admin.reserva@test.cl',
+    passwordHash: 'hash',
+    rol: 'admin',
+    negocioId: negocio._id,
+  });
   const token = jwt.sign({ sub: cliente._id.toString(), rol: 'cliente' }, readConfig().jwtSecret);
+  const adminToken = jwt.sign(
+    { sub: admin._id.toString(), rol: 'admin', negocioId: negocio._id.toString() },
+    readConfig().jwtSecret,
+  );
   return {
     negocio,
     servicio,
     cliente,
     token,
+    adminToken,
     fecha: date.toISOString().slice(0, 10),
   };
 }
@@ -125,4 +137,85 @@ test('rechaza horas que no corresponden a un bloque disponible', async () => {
 
   assert.equal(response.body.error.code, 'VALIDATION_ERROR');
   assert.equal(await Reserva.countDocuments({}), 0);
+});
+
+test('el cliente consulta solo sus reservas y puede cancelarlas sin borrar el historial', async () => {
+  const { negocio, servicio, cliente, token, fecha } = await fixture();
+  const reserva = await Reserva.create({
+    negocioId: negocio._id,
+    servicioId: servicio._id,
+    clienteId: cliente._id,
+    fecha,
+    hora: '09:00',
+    estado: 'confirmada',
+  });
+
+  const listResponse = await request(app)
+    .get('/api/reservas/cliente')
+    .set('Authorization', `Bearer ${token}`)
+    .expect(200);
+  assert.equal(listResponse.body.data.length, 1);
+
+  await request(app)
+    .patch(`/api/reservas/${reserva._id}/cancelar`)
+    .set('Authorization', `Bearer ${token}`)
+    .expect(200);
+
+  assert.equal(await Reserva.countDocuments({ _id: reserva._id }), 1);
+  assert.equal((await Reserva.findById(reserva._id)).estado, 'cancelada');
+});
+
+test('el administrador consulta por día y semana únicamente su negocio', async () => {
+  const { negocio, servicio, cliente, adminToken, fecha } = await fixture();
+  await Reserva.create({
+    negocioId: negocio._id,
+    servicioId: servicio._id,
+    clienteId: cliente._id,
+    fecha,
+    hora: '09:00',
+    estado: 'confirmada',
+  });
+
+  const dayResponse = await request(app)
+    .get(`/api/gestion/negocios/${negocio._id}/reservas`)
+    .query({ fecha })
+    .set('Authorization', `Bearer ${adminToken}`)
+    .expect(200);
+  assert.equal(dayResponse.body.data.length, 1);
+
+  const weekResponse = await request(app)
+    .get(`/api/gestion/negocios/${negocio._id}/reservas`)
+    .query({ semana: fecha })
+    .set('Authorization', `Bearer ${adminToken}`)
+    .expect(200);
+  assert.equal(weekResponse.body.data.length, 1);
+});
+
+test('una reserva cancelada libera el bloque para reservar nuevamente', async () => {
+  const { negocio, servicio, cliente, token, fecha } = await fixture();
+  const reserva = await Reserva.create({
+    negocioId: negocio._id,
+    servicioId: servicio._id,
+    clienteId: cliente._id,
+    fecha,
+    hora: '10:00',
+    estado: 'confirmada',
+  });
+  await request(app)
+    .patch(`/api/reservas/${reserva._id}/cancelar`)
+    .set('Authorization', `Bearer ${token}`)
+    .expect(200);
+
+  const response = await request(app)
+    .post('/api/reservas')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      negocioId: negocio._id.toString(),
+      servicioId: servicio._id.toString(),
+      fecha,
+      hora: '10:00',
+    })
+    .expect(201);
+  assert.equal(response.body.data.estado, 'confirmada');
+  assert.equal(await Reserva.countDocuments({ fecha, hora: '10:00' }), 2);
 });
