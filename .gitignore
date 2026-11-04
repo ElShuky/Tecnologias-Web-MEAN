@@ -4,6 +4,16 @@ dist/
 .env
 .env.*
 !.env.example
+atlas-credentials.env
+
+# Reportes y artefactos generados por pruebas
 coverage/
+.nyc_output/
+test-results/
+playwright-report/
+__screenshots__/
+
+# Logs y sistema
 .DS_Store
 npm-debug.log*
+yarn-error.log*

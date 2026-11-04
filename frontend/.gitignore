@@ -33,10 +33,12 @@ yarn-error.log
 /.angular/cache
 .sass-cache/
 /connect.lock
+# Tests and test artifacts
 /coverage
-/libpeerconnection.log
+.nyc_output/
+test-results/
+playwright-report/
 testem.log
-/typings
 __screenshots__/
 
 # System files

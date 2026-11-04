@@ -1,0 +1,17 @@
+# Dependencias
+node_modules/
+
+# Variables de entorno locales
+.env
+.env.*
+!.env.example
+
+# Reportes y artefactos generados por pruebas
+coverage/
+.nyc_output/
+test-results/
+
+# Logs y sistema
+npm-debug.log*
+yarn-error.log*
+.DS_Store
