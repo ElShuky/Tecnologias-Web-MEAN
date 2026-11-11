@@ -9,6 +9,8 @@ const {
 
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
+const SHORT_TEXT_MAX_LENGTH = 200;
+const LONG_TEXT_MAX_LENGTH = 1000;
 
 function ensureObjectId(value, field) {
   if (typeof value !== 'string' || !mongoose.Types.ObjectId.isValid(value)) {
@@ -69,18 +71,289 @@ function formatDate(date) {
 }
 
 function reservationData(reserva) {
+  const negocioId = reserva.negocioId?._id || reserva.negocioId;
+  const servicioId = reserva.servicioId?._id || reserva.servicioId;
+  const clienteId = reserva.clienteId?._id || reserva.clienteId;
   return {
     id: reserva._id.toString(),
-    negocioId: reserva.negocioId.toString(),
-    servicioId: reserva.servicioId.toString(),
-    clienteId: reserva.clienteId.toString(),
+    negocioId: negocioId.toString(),
+    servicioId: servicioId.toString(),
+    clienteId: clienteId.toString(),
+    negocioNombre: reserva.negocioId?.nombre,
+    servicioNombre: reserva.servicioId?.nombre,
+    clienteNombre: reserva.clienteId?.nombre,
+    clienteCorreo: reserva.clienteId?.correo,
     fecha: reserva.fecha,
     hora: reserva.hora,
     estado: reserva.estado,
     notas: reserva.notas,
+    respuestas: (reserva.respuestas || []).map((item) => ({
+      campoId: item.campoId,
+      etiqueta: item.etiqueta,
+      tipo: item.tipo,
+      valor: item.valor,
+    })),
     creadoEn: reserva.creadoEn,
     actualizadoEn: reserva.actualizadoEn,
   };
+}
+
+function isValidCalendarDateString(value) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+  const trimmed = value.trim();
+  if (!DATE_REGEX.test(trimmed)) {
+    return false;
+  }
+  const [year, month, day] = trimmed.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+}
+
+function isEmptyAnswerValue(valor) {
+  if (valor === undefined || valor === null) {
+    return true;
+  }
+  if (typeof valor === 'string' && valor.trim() === '') {
+    return true;
+  }
+  if (Array.isArray(valor) && valor.length === 0) {
+    return true;
+  }
+  return false;
+}
+
+function validateRespuestas(formulario = [], rawRespuestas = undefined) {
+  if (rawRespuestas !== undefined && rawRespuestas !== null && !Array.isArray(rawRespuestas)) {
+    throw new ValidationError('Las respuestas deben enviarse como un arreglo.', [
+      { field: 'respuestas', message: 'El campo respuestas debe ser un arreglo.' },
+    ]);
+  }
+
+  const respuestasInput = Array.isArray(rawRespuestas) ? rawRespuestas : [];
+  const todosLosCampos = Array.isArray(formulario) ? formulario : [];
+  const camposActivos = todosLosCampos
+    .filter((campo) => campo.activo !== false)
+    .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0));
+
+  const activosMap = new Map(camposActivos.map((campo) => [campo.id, campo]));
+  const inactivosMap = new Map(
+    todosLosCampos.filter((campo) => campo.activo === false).map((campo) => [campo.id, campo]),
+  );
+
+  const details = [];
+  const providedById = new Map();
+
+  respuestasInput.forEach((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) {
+      details.push({
+        field: `respuestas[${index}]`,
+        message: 'Cada respuesta debe ser un objeto con campoId y valor.',
+      });
+      return;
+    }
+
+    const campoId = typeof item.campoId === 'string' ? item.campoId.trim() : '';
+    if (!campoId) {
+      details.push({
+        field: `respuestas[${index}].campoId`,
+        message: 'Cada respuesta debe indicar un campoId válido.',
+      });
+      return;
+    }
+
+    if (providedById.has(campoId)) {
+      details.push({
+        field: campoId,
+        campoId,
+        message: `El campo "${campoId}" fue enviado más de una vez.`,
+      });
+      return;
+    }
+
+    if (!activosMap.has(campoId)) {
+      if (inactivosMap.has(campoId)) {
+        const inactivo = inactivosMap.get(campoId);
+        details.push({
+          field: campoId,
+          campoId,
+          etiqueta: inactivo.etiqueta,
+          message: `El campo "${inactivo.etiqueta}" (${campoId}) no se encuentra activo.`,
+        });
+      } else {
+        details.push({
+          field: campoId,
+          campoId,
+          message: `El campo "${campoId}" no existe en el formulario del servicio.`,
+        });
+      }
+      return;
+    }
+
+    providedById.set(campoId, item.valor);
+  });
+
+  const normalizedRespuestas = [];
+
+  for (const campo of camposActivos) {
+    const hasEntry = providedById.has(campo.id);
+    const rawVal = hasEntry ? providedById.get(campo.id) : undefined;
+
+    if (!hasEntry || isEmptyAnswerValue(rawVal)) {
+      if (campo.obligatorio) {
+        details.push({
+          field: campo.id,
+          campoId: campo.id,
+          etiqueta: campo.etiqueta,
+          message: `El campo obligatorio "${campo.etiqueta}" (${campo.id}) es requerido.`,
+        });
+      }
+      continue;
+    }
+
+    let normalizedVal;
+
+    switch (campo.tipo) {
+      case 'texto_corto': {
+        if (
+          typeof rawVal !== 'string' ||
+          rawVal.length > SHORT_TEXT_MAX_LENGTH ||
+          rawVal.trim().length > SHORT_TEXT_MAX_LENGTH
+        ) {
+          details.push({
+            field: campo.id,
+            campoId: campo.id,
+            etiqueta: campo.etiqueta,
+            message: `El campo "${campo.etiqueta}" (${campo.id}) debe ser texto corto de máximo ${SHORT_TEXT_MAX_LENGTH} caracteres.`,
+          });
+        } else {
+          normalizedVal = rawVal.trim();
+        }
+        break;
+      }
+      case 'texto_largo': {
+        if (
+          typeof rawVal !== 'string' ||
+          rawVal.length > LONG_TEXT_MAX_LENGTH ||
+          rawVal.trim().length > LONG_TEXT_MAX_LENGTH
+        ) {
+          details.push({
+            field: campo.id,
+            campoId: campo.id,
+            etiqueta: campo.etiqueta,
+            message: `El campo "${campo.etiqueta}" (${campo.id}) debe ser texto largo de máximo ${LONG_TEXT_MAX_LENGTH} caracteres.`,
+          });
+        } else {
+          normalizedVal = rawVal.trim();
+        }
+        break;
+      }
+      case 'numero': {
+        if (typeof rawVal !== 'number' || !Number.isFinite(rawVal)) {
+          details.push({
+            field: campo.id,
+            campoId: campo.id,
+            etiqueta: campo.etiqueta,
+            message: `El campo "${campo.etiqueta}" (${campo.id}) debe ser un número válido.`,
+          });
+        } else {
+          normalizedVal = rawVal;
+        }
+        break;
+      }
+      case 'fecha': {
+        if (!isValidCalendarDateString(rawVal)) {
+          details.push({
+            field: campo.id,
+            campoId: campo.id,
+            etiqueta: campo.etiqueta,
+            message: `El campo "${campo.etiqueta}" (${campo.id}) debe ser una fecha válida (AAAA-MM-DD).`,
+          });
+        } else {
+          normalizedVal = rawVal.trim();
+        }
+        break;
+      }
+      case 'si_no': {
+        if (typeof rawVal === 'boolean') {
+          normalizedVal = rawVal;
+        } else if (
+          typeof rawVal === 'string' &&
+          ['si', 'sí', 'no'].includes(rawVal.trim().toLowerCase())
+        ) {
+          normalizedVal = rawVal.trim().toLowerCase() !== 'no';
+        } else {
+          details.push({
+            field: campo.id,
+            campoId: campo.id,
+            etiqueta: campo.etiqueta,
+            message: `El campo "${campo.etiqueta}" (${campo.id}) debe tener un valor sí/no (booleano).`,
+          });
+        }
+        break;
+      }
+      case 'seleccion_unica': {
+        const opciones = Array.isArray(campo.opciones) ? campo.opciones : [];
+        if (typeof rawVal !== 'string' || !opciones.includes(rawVal.trim())) {
+          details.push({
+            field: campo.id,
+            campoId: campo.id,
+            etiqueta: campo.etiqueta,
+            message: `El campo "${campo.etiqueta}" (${campo.id}) debe corresponder a una opción permitida.`,
+          });
+        } else {
+          normalizedVal = rawVal.trim();
+        }
+        break;
+      }
+      case 'seleccion_multiple': {
+        const opciones = Array.isArray(campo.opciones) ? campo.opciones : [];
+        if (
+          !Array.isArray(rawVal) ||
+          rawVal.length === 0 ||
+          rawVal.some((opt) => typeof opt !== 'string' || !opciones.includes(opt.trim()))
+        ) {
+          details.push({
+            field: campo.id,
+            campoId: campo.id,
+            etiqueta: campo.etiqueta,
+            message: `El campo "${campo.etiqueta}" (${campo.id}) debe incluir solo opciones permitidas.`,
+          });
+        } else {
+          const cleanOptions = rawVal.map((opt) => opt.trim());
+          if (new Set(cleanOptions).size !== cleanOptions.length) {
+            details.push({
+              field: campo.id,
+              campoId: campo.id,
+              etiqueta: campo.etiqueta,
+              message: `El campo "${campo.etiqueta}" (${campo.id}) no admite opciones repetidas.`,
+            });
+          } else {
+            normalizedVal = cleanOptions;
+          }
+        }
+        break;
+      }
+      default:
+        break;
+    }
+
+    if (normalizedVal !== undefined) {
+      normalizedRespuestas.push({
+        campoId: campo.id,
+        etiqueta: campo.etiqueta,
+        tipo: campo.tipo,
+        valor: normalizedVal,
+      });
+    }
+  }
+
+  if (details.length > 0) {
+    throw new ValidationError(details[0].message, details);
+  }
+
+  return normalizedRespuestas;
 }
 
 function validateInput(data) {
@@ -135,11 +408,13 @@ async function crearReserva(clienteId, data) {
     negocioId: negocio._id,
     activo: true,
   })
-    .select('duracionMin')
+    .select('duracionMin formulario')
     .lean();
   if (!servicio) {
     throw new NotFoundError('El servicio solicitado no pertenece a este negocio.');
   }
+
+  const respuestas = validateRespuestas(servicio.formulario || [], data.respuestas);
 
   const disponibilidad = await Disponibilidad.findOne({
     negocioId: negocio._id,
@@ -171,6 +446,7 @@ async function crearReserva(clienteId, data) {
       hora: data.hora,
       estado: 'confirmada',
       notas: data.notas?.trim() || '',
+      respuestas,
     });
     return reservationData(reserva);
   } catch (error) {
@@ -214,7 +490,11 @@ async function listarReservasCliente(clienteId, query = {}) {
     parseCalendarDate(query.fecha);
     filter.fecha = query.fecha;
   }
-  const reservas = await Reserva.find(filter).sort({ fecha: 1, hora: 1 }).lean();
+  const reservas = await Reserva.find(filter)
+    .populate('negocioId', 'nombre')
+    .populate('servicioId', 'nombre')
+    .sort({ fecha: 1, hora: 1 })
+    .lean();
   return reservas.map(reservationData);
 }
 
@@ -244,7 +524,12 @@ async function listarReservasNegocio(negocioId, query = {}) {
     const { inicio, fin } = getWeekRange(query.semana);
     filter.fecha = { $gte: inicio, $lte: fin };
   }
-  const reservas = await Reserva.find(filter).sort({ fecha: 1, hora: 1 }).lean();
+  const reservas = await Reserva.find(filter)
+    .populate('negocioId', 'nombre')
+    .populate('servicioId', 'nombre')
+    .populate('clienteId', 'nombre correo')
+    .sort({ fecha: 1, hora: 1 })
+    .lean();
   return reservas.map(reservationData);
 }
 

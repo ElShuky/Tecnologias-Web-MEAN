@@ -220,7 +220,10 @@ test('POST /api/auth/login devuelve un JWT válido para un cliente', async () =>
     response.body.data.token,
     process.env.JWT_SECRET || 'desarrollo-local-secreto-seguro-123456',
   );
-  assert.equal(payload.sub, (await Usuario.findOne({ correo: 'cliente.login@test.cl' }))._id.toString());
+  assert.equal(
+    payload.sub,
+    (await Usuario.findOne({ correo: 'cliente.login@test.cl' }))._id.toString(),
+  );
   assert.equal(payload.rol, 'cliente');
   assert.equal(payload.negocioId, undefined);
 });

@@ -279,3 +279,29 @@ docker compose exec backend npm run format:check
 # Ejecutar pruebas unitarias de errores dentro del contenedor
 docker compose exec backend npm test
 ```
+# Almacenamiento de imágenes de negocios
+
+El logotipo y la imagen de portada se almacenan como archivos en el directorio
+`UPLOADS_DIR` del backend, no dentro de MongoDB. En Docker Compose este directorio
+es `/app/uploads` y está respaldado por el volumen persistente `business-uploads`.
+MongoDB conserva únicamente las rutas públicas `logoUrl` y `portadaUrl` asociadas
+al documento del negocio.
+
+Esta decisión evita aumentar el tamaño de los documentos de MongoDB y permite
+servir las imágenes como archivos estáticos. El volumen debe conservarse al
+actualizar los contenedores para no perder las imágenes.
+
+Los administradores pueden cargar imágenes mediante `POST
+/api/negocios/gestion/:negocioId/imagenes/:tipo`, usando el campo multipart
+`imagen` y `tipo` `logo` o `portada`. El middleware limita cada archivo a 5 MB,
+acepta PNG, JPG/JPEG y WebP, y comprueba la firma binaria real del archivo; no
+se confía solo en la extensión ni en el MIME declarado por el navegador.
+
+La personalización visual se administra con `GET /api/personalizacion` y
+`PUT /api/personalizacion`. Estas rutas usan exclusivamente el `negocioId` del
+JWT del administrador y aceptan únicamente `logo`, `portada`, `colorPrimario` y
+`colorSecundario`. Las imágenes deben ser rutas generadas por el almacenamiento
+del propio negocio; para quitarlas se envía `null`. Los colores aceptan
+solamente hexadecimal de 3 o 6 dígitos, por ejemplo `#2F6F78`; enviar `null`
+restaura el color por defecto. Cualquier otro campo, incluidos tamaños,
+espaciado o estructura, se rechaza.

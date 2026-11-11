@@ -1,0 +1,126 @@
+.filters {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr auto;
+  gap: 1rem;
+  align-items: end;
+  margin: 2.5rem 0;
+  padding: 1.25rem;
+  border-radius: 0.8rem;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.business-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.directory-card {
+  --business-primary: #2f6f78;
+  --business-secondary: #b77942;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.business-cover-stage {
+  position: relative;
+  width: 100%;
+  height: 9.5rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  border-bottom: 3px solid var(--business-secondary);
+  border-radius: 0.65rem;
+  background: linear-gradient(135deg, var(--business-primary) 0%, var(--business-secondary) 100%);
+}
+
+.business-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.business-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--business-primary) 55%, rgb(0 0 0 / 40%)) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.business-logo-badge {
+  position: absolute;
+  left: 0.85rem;
+  bottom: 0.65rem;
+  z-index: 2;
+  padding: 0.2rem;
+  border: 2px solid var(--business-secondary);
+  border-radius: 0.65rem;
+  background: var(--surface);
+  box-shadow: 0 0.45rem 1.1rem rgb(0 0 0 / 26%);
+}
+
+.business-logo {
+  display: block;
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 0.5rem;
+  object-fit: cover;
+}
+
+.business-category {
+  display: inline-block;
+  width: fit-content;
+  padding: 0.22rem 0.65rem;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--business-secondary);
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.business-grid h2 {
+  margin: 0.7rem 0 0.4rem;
+  color: var(--business-primary);
+  font-size: 1.3rem;
+}
+
+.business-grid p {
+  min-height: 3rem;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.business-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  margin-top: 1.25rem;
+  padding: 0.6rem 0.95rem;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  background: var(--business-primary);
+  font-weight: 800;
+  text-decoration: none;
+  transition: 160ms ease;
+}
+
+.business-link:hover {
+  background: var(--business-secondary);
+}
+
+@media (max-width: 800px) {
+  .filters,
+  .business-grid {
+    grid-template-columns: 1fr;
+  }
+}

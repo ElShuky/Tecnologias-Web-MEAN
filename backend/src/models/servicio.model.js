@@ -1,5 +1,60 @@
 const mongoose = require('mongoose');
 
+const TIPOS_CAMPO_PERMITIDOS = [
+  'texto_corto',
+  'texto_largo',
+  'numero',
+  'fecha',
+  'si_no',
+  'seleccion_unica',
+  'seleccion_multiple',
+];
+
+const campoFormularioSchema = new mongoose.Schema(
+  {
+    id: {
+      type: String,
+      required: [true, 'El id del campo es requerido.'],
+      trim: true,
+    },
+    etiqueta: {
+      type: String,
+      required: [true, 'La etiqueta del campo es requerida.'],
+      trim: true,
+    },
+    tipo: {
+      type: String,
+      required: [true, 'El tipo de dato del campo es requerido.'],
+      enum: {
+        values: TIPOS_CAMPO_PERMITIDOS,
+        message: 'El tipo de campo no es permitido.',
+      },
+    },
+    obligatorio: {
+      type: Boolean,
+      default: false,
+    },
+    textoAyuda: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    opciones: {
+      type: [String],
+      default: [],
+    },
+    activo: {
+      type: Boolean,
+      default: true,
+    },
+    orden: {
+      type: Number,
+      default: 0,
+    },
+  },
+  { _id: false },
+);
+
 const servicioSchema = new mongoose.Schema(
   {
     negocioId: {
@@ -35,6 +90,16 @@ const servicioSchema = new mongoose.Schema(
     activo: {
       type: Boolean,
       default: true,
+    },
+    formulario: {
+      type: [campoFormularioSchema],
+      default: [],
+      validate: {
+        validator: function (campos) {
+          return Array.isArray(campos) && campos.length <= 15;
+        },
+        message: 'El formulario no puede superar los 15 campos.',
+      },
     },
   },
   {

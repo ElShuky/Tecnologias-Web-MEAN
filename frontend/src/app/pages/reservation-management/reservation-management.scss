@@ -1,0 +1,102 @@
+.management-page {
+  max-width: 76rem;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 2rem;
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.filters {
+  display: flex;
+  align-items: end;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.filters label {
+  display: grid;
+  gap: 0.4rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.filters input,
+.filters select {
+  min-height: 2.7rem;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  font: inherit;
+}
+
+.clear-filter {
+  min-height: 2.7rem;
+  padding: 0.5rem 0.8rem;
+  border: 1px solid var(--primary);
+  border-radius: 0.45rem;
+  color: var(--primary);
+  background: transparent;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.filter-caption {
+  margin: 1rem 0 0;
+  color: var(--muted);
+}
+
+.table-wrap {
+  overflow-x: auto;
+  margin-top: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.7rem;
+  background: var(--surface);
+}
+
+table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+}
+
+tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.booking-state {
+  display: inline-block;
+  padding: 0.35rem 0.6rem;
+  border-radius: 2rem;
+  color: var(--success);
+  background: #e8f4ed;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.booking-state.is-cancelled {
+  color: var(--muted);
+  background: #edf1f3;
+}
+
+.muted {
+  color: var(--muted);
+}

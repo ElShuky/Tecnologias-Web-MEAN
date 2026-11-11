@@ -28,6 +28,7 @@ services:
       MONGODB_URI: mongodb://mongo:27017/reservas?replicaSet=rs0
       JWT_SECRET: ${JWT_SECRET:-local-development-secret-change-me}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:8080}
+      UPLOADS_DIR: /app/uploads
     healthcheck:
       test: ["CMD", "wget", "--spider", "--quiet", "http://localhost:3000/api/health"]
       interval: 5s
@@ -38,6 +39,8 @@ services:
         condition: service_healthy
     ports:
       - "3000:3000"
+    volumes:
+      - business-uploads:/app/uploads
 
   frontend:
     build:
@@ -51,3 +54,4 @@ services:
 
 volumes:
   mongo-data:
+  business-uploads:

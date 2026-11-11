@@ -2,6 +2,7 @@ require('dotenv').config();
 
 const cors = require('cors');
 const express = require('express');
+const path = require('node:path');
 const { connectDatabase } = require('./database');
 const { readConfig } = require('./config');
 const { notFoundHandler, errorHandler } = require('./middlewares/error.middleware');
@@ -13,13 +14,15 @@ const {
 } = require('./errors/app.error');
 
 const app = express();
+const { uploadsDir, frontendUrl } = readConfig();
 
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    origin: frontendUrl,
   }),
 );
 app.use(express.json());
+app.use('/uploads', express.static(path.resolve(uploadsDir), { index: false }));
 
 // Endpoints base
 app.get('/api/health', (_request, response) => {
@@ -70,6 +73,9 @@ const servicioRoutes = require('./routes/servicio.routes');
 const disponibilidadRoutes = require('./routes/disponibilidad.routes');
 const bloqueRoutes = require('./routes/bloque.routes');
 const reservaRoutes = require('./routes/reserva.routes');
+const seguimientoRoutes = require('./routes/seguimiento.routes');
+const personalizacionRoutes = require('./routes/personalizacion.routes');
+const formularioRoutes = require('./routes/formulario.routes');
 app.use('/api/auth', authRoutes);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/negocios', negocioRoutes);
@@ -77,6 +83,9 @@ app.use('/api', servicioRoutes);
 app.use('/api', disponibilidadRoutes);
 app.use('/api', bloqueRoutes);
 app.use('/api', reservaRoutes);
+app.use('/api', seguimientoRoutes);
+app.use('/api', personalizacionRoutes);
+app.use('/api', formularioRoutes);
 
 // Manejo centralizado de rutas 404 y errores
 app.use(notFoundHandler);

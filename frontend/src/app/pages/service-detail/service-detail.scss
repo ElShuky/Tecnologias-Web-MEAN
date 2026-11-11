@@ -1,0 +1,232 @@
+.service-detail {
+  max-width: 52rem;
+  --business-primary: var(--primary, #2f6f78);
+  --business-secondary: var(--secondary, #b77942);
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 1.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  color: var(--business-primary);
+  background: color-mix(in srgb, var(--business-primary) 12%, white);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.business-banner {
+  overflow: hidden;
+  margin-bottom: 1.75rem;
+  border: 2px solid color-mix(in srgb, var(--business-primary) 28%, transparent);
+  border-radius: 0.95rem;
+  background: var(--surface);
+  box-shadow: 0 0.85rem 2rem color-mix(in srgb, var(--business-primary) 14%, transparent);
+}
+
+.business-cover-stage {
+  position: relative;
+  width: 100%;
+  height: 13.5rem;
+  background: linear-gradient(135deg, var(--business-primary) 0%, var(--business-secondary) 100%);
+}
+
+.business-cover {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.business-cover-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--business-primary) 60%, rgb(0 0 0 / 45%)) 0%,
+    transparent 65%
+  );
+  pointer-events: none;
+}
+
+.business-logo-badge {
+  position: absolute;
+  left: 1.5rem;
+  bottom: 1rem;
+  z-index: 2;
+  padding: 0.3rem;
+  border: 3px solid var(--business-secondary);
+  border-radius: 0.85rem;
+  background: var(--surface);
+  box-shadow: 0 0.65rem 1.5rem rgb(0 0 0 / 28%);
+}
+
+.business-logo {
+  display: block;
+  width: 4.75rem;
+  height: 4.75rem;
+  border-radius: 0.65rem;
+  object-fit: cover;
+}
+
+.business-brand {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border-top: 3px solid var(--business-secondary);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--business-primary) 12%, white),
+    color-mix(in srgb, var(--business-secondary) 10%, white)
+  );
+  color: var(--business-primary);
+  font-size: 1.1rem;
+}
+
+.business-rubro-pill {
+  padding: 0.25rem 0.7rem;
+  border-radius: 999px;
+  color: #ffffff;
+  background: var(--business-secondary);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.service-detail .eyebrow {
+  color: var(--business-secondary);
+}
+
+.service-detail .page-title {
+  color: var(--business-primary);
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2rem;
+  margin: 2rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid var(--business-secondary);
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--business-primary) 8%, white);
+}
+
+.detail-meta div {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.detail-meta span {
+  color: var(--business-secondary);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.detail-meta strong {
+  color: var(--business-primary);
+  font-size: 1.25rem;
+}
+
+.reserve-link {
+  display: inline-block;
+  text-decoration: none;
+}
+
+.service-custom-form-preview {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1.75rem;
+  padding: 1.15rem;
+  border: 1px solid color-mix(in srgb, var(--business-primary) 24%, transparent);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--business-primary) 4%, white);
+}
+
+.service-custom-form-preview h3 {
+  margin: 0;
+  color: var(--business-primary);
+  font-size: 1.05rem;
+}
+
+.form-preview-lead {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.custom-fields-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.custom-field-item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: var(--surface);
+}
+
+.custom-field-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.custom-field-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.field-type-badge,
+.field-req-badge,
+.field-opt-badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.field-type-badge {
+  color: var(--business-primary);
+  background: color-mix(in srgb, var(--business-primary) 14%, white);
+}
+
+.field-req-badge {
+  color: #ffffff;
+  background: var(--business-secondary);
+}
+
+.field-opt-badge {
+  color: var(--muted);
+  background: #eef2f3;
+}
+
+.field-help {
+  color: var(--muted);
+}
+
+.field-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.2rem;
+}
+
+.field-option-chip {
+  padding: 0.2rem 0.55rem;
+  border: 1px solid color-mix(in srgb, var(--business-secondary) 40%, transparent);
+  border-radius: 0.4rem;
+  color: var(--text);
+  background: color-mix(in srgb, var(--business-secondary) 10%, white);
+  font-size: 0.78rem;
+}

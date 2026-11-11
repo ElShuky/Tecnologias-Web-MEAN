@@ -63,4 +63,15 @@ async function listarPublicos(req, res, next) {
   }
 }
 
-module.exports = { listar, crear, editar, desactivar, listarPublicos };
+async function obtenerPublico(req, res, next) {
+  try {
+    return res.json({
+      success: true,
+      data: await servicioService.obtenerServicioPublico(req.params.slug, req.params.servicioId),
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+module.exports = { listar, crear, editar, desactivar, listarPublicos, obtenerPublico };

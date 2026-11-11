@@ -1,5 +1,41 @@
 const mongoose = require('mongoose');
 
+const respuestaReservaSchema = new mongoose.Schema(
+  {
+    campoId: {
+      type: String,
+      required: [true, 'El identificador del campo es requerido.'],
+      trim: true,
+    },
+    etiqueta: {
+      type: String,
+      required: [true, 'La etiqueta del campo es requerida.'],
+      trim: true,
+    },
+    tipo: {
+      type: String,
+      required: [true, 'El tipo del campo es requerido.'],
+      enum: {
+        values: [
+          'texto_corto',
+          'texto_largo',
+          'numero',
+          'fecha',
+          'si_no',
+          'seleccion_unica',
+          'seleccion_multiple',
+        ],
+        message: 'El tipo de campo en la respuesta no es válido.',
+      },
+    },
+    valor: {
+      type: mongoose.Schema.Types.Mixed,
+      required: [true, 'El valor de la respuesta es requerido.'],
+    },
+  },
+  { _id: false },
+);
+
 const reservaSchema = new mongoose.Schema(
   {
     negocioId: {
@@ -58,6 +94,10 @@ const reservaSchema = new mongoose.Schema(
       default: '',
       trim: true,
       maxlength: [500, 'Las notas no pueden exceder los 500 caracteres.'],
+    },
+    respuestas: {
+      type: [respuestaReservaSchema],
+      default: [],
     },
   },
   {

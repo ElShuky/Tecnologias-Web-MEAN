@@ -5,7 +5,7 @@ const { ValidationError, NotFoundError } = require('../errors/app.error');
 const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
 
 function parseDate(date) {
-  if (!DATE_REGEX.test(date)) {
+  if (typeof date !== 'string' || !DATE_REGEX.test(date)) {
     throw new ValidationError('La fecha debe tener el formato AAAA-MM-DD.', [
       { field: 'fecha', message: 'Use el formato AAAA-MM-DD.' },
     ]);

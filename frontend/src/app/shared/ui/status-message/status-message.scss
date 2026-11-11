@@ -1,0 +1,28 @@
+.status {
+  display: grid;
+  gap: 0.2rem;
+  padding: 1rem 1.15rem;
+  border-left: 4px solid;
+  border-radius: 0.45rem;
+  background: var(--surface);
+}
+
+.status span {
+  color: var(--muted);
+}
+
+.status--info {
+  border-color: var(--primary);
+}
+
+.status--success {
+  border-color: var(--success);
+}
+
+.status--warning {
+  border-color: var(--warning);
+}
+
+.status--error {
+  border-color: var(--danger);
+}

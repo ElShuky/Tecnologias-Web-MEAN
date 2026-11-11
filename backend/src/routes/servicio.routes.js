@@ -22,5 +22,6 @@ router.delete(
   servicioController.desactivar,
 );
 router.get('/negocios/:slug/servicios', servicioController.listarPublicos);
+router.get('/negocios/:slug/servicios/:servicioId', servicioController.obtenerPublico);
 
 module.exports = router;

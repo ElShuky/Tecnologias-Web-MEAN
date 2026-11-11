@@ -1,0 +1,30 @@
+.form-field {
+  display: grid;
+  gap: 0.45rem;
+  color: var(--text);
+  font-weight: 700;
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  outline: 0;
+  color: var(--text);
+  background: var(--surface);
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgb(47 111 120 / 15%);
+}
+
+.form-field small {
+  color: var(--muted);
+  font-weight: 400;
+}

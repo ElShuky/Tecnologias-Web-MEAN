@@ -6,6 +6,7 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+RUN mkdir -p /app/uploads/logos /app/uploads/portadas && chown -R node:node /app
 
 EXPOSE 3000
 

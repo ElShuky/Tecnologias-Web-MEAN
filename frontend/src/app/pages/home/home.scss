@@ -1,0 +1,149 @@
+.hero {
+  padding: 5rem 0;
+  background: linear-gradient(120deg, #f7f9fc 45%, #e8f1f1);
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(280px, 0.7fr);
+  gap: 4rem;
+  align-items: center;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+  margin-top: 2rem;
+}
+
+.hero-actions a {
+  text-decoration: none;
+}
+
+.hero-card {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.hero-card strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.hero-card p,
+.hero-stat span,
+.feature-grid p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.hero-icon {
+  display: grid;
+  flex: 0 0 2.5rem;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  color: var(--surface);
+  background: var(--secondary);
+  font-weight: 800;
+}
+
+.hero-line {
+  height: 1px;
+  margin: 1.5rem 0;
+  background: var(--border);
+}
+
+.hero-stat {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+}
+
+.hero-stat strong {
+  color: var(--primary);
+  font-size: 2rem;
+}
+
+.features {
+  padding-top: 4rem;
+  padding-bottom: 5rem;
+}
+
+.followed-section {
+  padding-bottom: 5rem;
+}
+
+.followed-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.followed-grid app-card {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.followed-grid h3 {
+  margin: 0;
+}
+
+.followed-service {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  text-decoration: none;
+}
+
+.followed-service:hover,
+.business-link:hover {
+  color: var(--primary);
+}
+
+.business-link {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.4rem);
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 2rem;
+}
+
+.feature-number {
+  color: var(--secondary);
+  font-weight: 800;
+}
+
+.feature-grid h3 {
+  margin: 1.5rem 0 0.45rem;
+}
+
+@media (max-width: 700px) {
+  .hero {
+    padding: 3.5rem 0;
+  }
+
+  .hero-grid,
+  .feature-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+}

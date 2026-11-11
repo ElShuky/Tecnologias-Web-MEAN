@@ -6,8 +6,7 @@ const request = require('supertest');
 const app = require('../src/server');
 const { Negocio, Servicio, Disponibilidad } = require('../src/models');
 
-const URI =
-  process.env.MONGODB_URI || 'mongodb://localhost:27017/reservas_test_disponibilidad';
+const URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/reservas_test_disponibilidad';
 const SECRET = process.env.JWT_SECRET || 'desarrollo-local-secreto-seguro-123456';
 
 before(async () => {
@@ -97,7 +96,9 @@ test('impide que el administrador acceda a la ruta de otro negocio aunque envíe
   const authorization = `Bearer ${token('admin', first.negocio._id.toString())}`;
 
   await request(app)
-    .get(`/api/gestion/negocios/${second.negocio._id}/servicios/${second.servicio._id}/disponibilidad`)
+    .get(
+      `/api/gestion/negocios/${second.negocio._id}/servicios/${second.servicio._id}/disponibilidad`,
+    )
     .set('Authorization', authorization)
     .send({ negocioId: first.negocio._id })
     .expect(403);

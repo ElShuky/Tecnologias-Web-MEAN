@@ -24,7 +24,10 @@ beforeEach(async () => {
 });
 
 function token(rol, negocioId) {
-  return jwt.sign({ sub: new mongoose.Types.ObjectId().toString(), rol, ...(negocioId ? { negocioId } : {}) }, SECRET);
+  return jwt.sign(
+    { sub: new mongoose.Types.ObjectId().toString(), rol, ...(negocioId ? { negocioId } : {}) },
+    SECRET,
+  );
 }
 async function createBusiness(slug) {
   return Negocio.create({ nombre: slug, rubro: 'Salud', slug });
@@ -89,7 +92,10 @@ test('listado público solo expone servicios activos del negocio solicitado', as
     { negocioId: business._id, nombre: 'Inactivo', duracionMin: 30, precio: 1000, activo: false },
   ]);
   const response = await request(app).get('/api/negocios/publico/servicios').expect(200);
-  assert.deepEqual(response.body.data.map((item) => item.nombre), ['Activo']);
+  assert.deepEqual(
+    response.body.data.map((item) => item.nombre),
+    ['Activo'],
+  );
   assert.equal(response.body.data[0].negocioId, undefined);
 });
 

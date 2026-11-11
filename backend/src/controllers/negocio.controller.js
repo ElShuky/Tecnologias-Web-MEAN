@@ -38,8 +38,21 @@ async function obtenerPorSlug(req, res, next) {
   }
 }
 
+async function obtenerPorId(req, res, next) {
+  try {
+    const negocio = await negocioService.obtenerNegocioPorId(req.businessId);
+    if (!negocio) {
+      throw new NotFoundError('El negocio solicitado no fue encontrado.');
+    }
+    return res.json({ success: true, data: negocio });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   registrar,
   listar,
   obtenerPorSlug,
+  obtenerPorId,
 };

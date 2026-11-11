@@ -8,27 +8,38 @@ const UsuarioDirecto = require('../src/models/usuario.model');
 const ServicioDirecto = require('../src/models/servicio.model');
 const DisponibilidadDirecto = require('../src/models/disponibilidad.model');
 const ReservaDirecto = require('../src/models/reserva.model');
+const SeguimientoDirecto = require('../src/models/seguimiento.model');
 
-const { Negocio, Usuario, Servicio, Disponibilidad, Reserva } = require('../src/models');
+const {
+  Negocio,
+  Usuario,
+  Servicio,
+  Disponibilidad,
+  Reserva,
+  Seguimiento,
+} = require('../src/models');
 
-test('Los cinco modelos se pueden importar tanto individualmente como desde models/index.js', () => {
+test('Los modelos se pueden importar tanto individualmente como desde models/index.js', () => {
   assert.equal(Negocio, NegocioDirecto);
   assert.equal(Usuario, UsuarioDirecto);
   assert.equal(Servicio, ServicioDirecto);
   assert.equal(Disponibilidad, DisponibilidadDirecto);
   assert.equal(Reserva, ReservaDirecto);
+  assert.equal(Seguimiento, SeguimientoDirecto);
 
   assert.equal(typeof Negocio, 'function');
   assert.equal(typeof Usuario, 'function');
   assert.equal(typeof Servicio, 'function');
   assert.equal(typeof Disponibilidad, 'function');
   assert.equal(typeof Reserva, 'function');
+  assert.equal(typeof Seguimiento, 'function');
 
   assert.equal(Negocio.modelName, 'Negocio');
   assert.equal(Usuario.modelName, 'Usuario');
   assert.equal(Servicio.modelName, 'Servicio');
   assert.equal(Disponibilidad.modelName, 'Disponibilidad');
   assert.equal(Reserva.modelName, 'Reserva');
+  assert.equal(Seguimiento.modelName, 'Seguimiento');
 });
 
 test('Las referencias entre entidades están correctamente configuradas', () => {
@@ -42,10 +53,13 @@ test('Las referencias entre entidades están correctamente configuradas', () => 
   assert.equal(Reserva.schema.path('negocioId').options.ref, 'Negocio');
   assert.equal(Reserva.schema.path('servicioId').options.ref, 'Servicio');
   assert.equal(Reserva.schema.path('clienteId').options.ref, 'Usuario');
+
+  assert.equal(Seguimiento.schema.path('clienteId').options.ref, 'Usuario');
+  assert.equal(Seguimiento.schema.path('negocioId').options.ref, 'Negocio');
 });
 
 test('Todos los modelos configuran timestamps mapeados a creadoEn y actualizadoEn', () => {
-  const modelos = [Negocio, Usuario, Servicio, Disponibilidad, Reserva];
+  const modelos = [Negocio, Usuario, Servicio, Disponibilidad, Reserva, Seguimiento];
   for (const modelo of modelos) {
     const timestamps = modelo.schema.options.timestamps;
     assert.ok(timestamps, `El modelo ${modelo.modelName} debe definir timestamps.`);

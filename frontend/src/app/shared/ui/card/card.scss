@@ -1,0 +1,16 @@
+.card {
+  padding: 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.9rem;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.card--interactive {
+  transition: 160ms ease;
+}
+
+.card--interactive:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}

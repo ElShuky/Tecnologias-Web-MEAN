@@ -1,0 +1,47 @@
+.register-page {
+  display: grid;
+  place-items: center;
+}
+
+.register-page app-card {
+  display: block;
+  width: min(100%, 30rem);
+}
+
+.register-page h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.intro {
+  margin: 0.6rem 0 2rem;
+  color: var(--muted);
+}
+
+.status {
+  margin-bottom: 1.25rem;
+}
+
+form {
+  display: grid;
+  gap: 1.15rem;
+}
+
+form app-button {
+  margin-top: 0.35rem;
+}
+
+.switch-link {
+  margin: 1.5rem 0 0;
+  color: var(--muted);
+  text-align: center;
+}
+
+.switch-link a {
+  color: var(--primary);
+  font-weight: 700;
+}
+
+.field-error {
+  color: var(--danger) !important;
+}

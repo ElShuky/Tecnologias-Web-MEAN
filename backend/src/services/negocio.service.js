@@ -9,6 +9,12 @@ const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const BCRYPT_SALT_ROUNDS = 10;
 
 function publicBusiness(negocio) {
+  const personalizacion = {
+    logo: negocio.personalizacion?.logo || negocio.logoUrl || null,
+    portada: negocio.personalizacion?.portada || negocio.portadaUrl || null,
+    colorPrimario: negocio.personalizacion?.colorPrimario || null,
+    colorSecundario: negocio.personalizacion?.colorSecundario || null,
+  };
   return {
     id: negocio._id.toString(),
     nombre: negocio.nombre,
@@ -16,6 +22,9 @@ function publicBusiness(negocio) {
     slug: negocio.slug,
     descripcion: negocio.descripcion,
     enlacePublico: `${readConfig().frontendUrl}/negocios/${negocio.slug}`,
+    logoUrl: personalizacion.logo || '',
+    portadaUrl: personalizacion.portada || '',
+    personalizacion,
   };
 }
 
@@ -123,7 +132,7 @@ async function listarNegocios({ search, rubro } = {}) {
     };
   }
   const negocios = await Negocio.find(filter)
-    .select('nombre rubro slug descripcion')
+    .select('nombre rubro slug descripcion logoUrl portadaUrl personalizacion')
     .sort({ nombre: 1 })
     .lean();
   return negocios.map(publicBusiness);
@@ -131,7 +140,14 @@ async function listarNegocios({ search, rubro } = {}) {
 
 async function obtenerNegocioPublico(slug) {
   const negocio = await Negocio.findOne({ slug: slug.trim().toLowerCase(), activo: true })
-    .select('nombre rubro slug descripcion')
+    .select('nombre rubro slug descripcion logoUrl portadaUrl personalizacion')
+    .lean();
+  return negocio ? publicBusiness(negocio) : null;
+}
+
+async function obtenerNegocioPorId(negocioId) {
+  const negocio = await Negocio.findOne({ _id: negocioId, activo: true })
+    .select('nombre rubro slug descripcion logoUrl portadaUrl personalizacion')
     .lean();
   return negocio ? publicBusiness(negocio) : null;
 }
@@ -140,4 +156,5 @@ module.exports = {
   registrarNegocio,
   listarNegocios,
   obtenerNegocioPublico,
+  obtenerNegocioPorId,
 };

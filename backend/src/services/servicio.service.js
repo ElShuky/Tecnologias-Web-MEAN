@@ -120,10 +120,32 @@ async function listarServiciosPublicos(slug) {
   return listarServicios(negocio._id, false);
 }
 
+async function obtenerServicioPublico(slug, servicioId) {
+  ensureObjectId(servicioId, 'servicioId');
+  const negocio = await Negocio.findOne({ slug: slug.trim().toLowerCase(), activo: true })
+    .select('_id')
+    .lean();
+  if (!negocio) {
+    throw new NotFoundError('El negocio solicitado no fue encontrado.');
+  }
+  const servicio = await Servicio.findOne({
+    _id: servicioId,
+    negocioId: negocio._id,
+    activo: true,
+  })
+    .select('nombre descripcion duracionMin precio activo')
+    .lean();
+  if (!servicio) {
+    throw new NotFoundError('El servicio solicitado no fue encontrado.');
+  }
+  return publicService(servicio);
+}
+
 module.exports = {
   listarServicios,
   crearServicio,
   editarServicio,
   desactivarServicio,
   listarServiciosPublicos,
+  obtenerServicioPublico,
 };

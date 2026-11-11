@@ -30,6 +30,34 @@ const negocioSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    logoUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    portadaUrl: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    personalizacion: {
+      logo: {
+        type: String,
+        default: null,
+      },
+      portada: {
+        type: String,
+        default: null,
+      },
+      colorPrimario: {
+        type: String,
+        default: null,
+      },
+      colorSecundario: {
+        type: String,
+        default: null,
+      },
+    },
   },
   {
     timestamps: { createdAt: 'creadoEn', updatedAt: 'actualizadoEn' },

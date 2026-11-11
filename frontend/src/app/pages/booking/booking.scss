@@ -1,0 +1,358 @@
+.booking-page {
+  max-width: 70rem;
+}
+
+.back-link,
+.cancel-link {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 2rem;
+}
+
+.booking-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(260px, 0.75fr);
+  gap: 1.25rem;
+  margin-top: 2rem;
+  align-items: start;
+}
+
+.booking-selection app-card {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.summary-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-heading h2 {
+  margin: 0.35rem 0;
+}
+
+.summary-heading span {
+  color: var(--muted);
+}
+
+.summary-heading > strong {
+  color: var(--primary);
+  font-size: 1.25rem;
+  white-space: nowrap;
+}
+
+.blocks-heading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.blocks-heading h3 {
+  margin: 0;
+}
+
+.blocks-heading span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.blocks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
+  gap: 0.65rem;
+}
+
+.time-block {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.8rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  cursor: pointer;
+  color: var(--text);
+  background: var(--surface);
+  text-align: center;
+}
+
+.time-block:hover:not(:disabled),
+.time-block.is-selected {
+  border-color: var(--primary);
+  color: var(--surface);
+  background: var(--primary);
+}
+
+.time-block span,
+.time-block small {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.time-block:hover:not(:disabled) span,
+.time-block:hover:not(:disabled) small,
+.time-block.is-selected span,
+.time-block.is-selected small {
+  color: rgb(255 255 255 / 80%);
+}
+
+.time-block.is-occupied {
+  cursor: not-allowed;
+  color: var(--muted);
+  background: #edf1f3;
+  opacity: 0.7;
+}
+
+.custom-booking-form {
+  display: grid;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.custom-field-group {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 0.55rem;
+  background: #fafcfd;
+}
+
+.custom-field-group.has-error {
+  border-color: #b43c3c;
+  background: #fff8f8;
+}
+
+.custom-field-label {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.field-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.field-label-text {
+  font-weight: 700;
+  font-size: 0.94rem;
+}
+
+.req-badge,
+.opt-badge {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 800;
+}
+
+.req-badge {
+  border: 1px solid var(--secondary);
+  color: #ffffff;
+  background: var(--secondary);
+}
+
+.opt-badge {
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--surface);
+}
+
+.custom-field-hint {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.8rem;
+}
+
+.custom-field-group input[type='text'],
+.custom-field-group input[type='number'],
+.custom-field-group input[type='date'],
+.custom-field-group textarea,
+.custom-field-group select {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--surface);
+  font: inherit;
+}
+
+.switch-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.switch-toggle {
+  position: relative;
+  display: inline-block;
+  width: 3rem;
+  height: 1.65rem;
+  cursor: pointer;
+}
+
+.switch-toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: #cbd5db;
+  transition: background 0.2s ease;
+}
+
+.switch-slider::before {
+  content: '';
+  position: absolute;
+  left: 0.2rem;
+  bottom: 0.2rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: #ffffff;
+  transition: transform 0.2s ease;
+}
+
+.switch-toggle input:checked + .switch-slider {
+  background: var(--primary);
+}
+
+.switch-toggle input:checked + .switch-slider::before {
+  transform: translateX(1.35rem);
+}
+
+.switch-buttons {
+  display: inline-flex;
+  gap: 0.35rem;
+}
+
+.switch-option {
+  padding: 0.35rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.4rem;
+  color: var(--text);
+  background: var(--surface);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.switch-option.is-active {
+  border-color: var(--primary);
+  color: #ffffff;
+  background: var(--primary);
+}
+
+.switch-state-label {
+  color: var(--muted);
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.field-error-message {
+  color: #b43c3c;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.multi-options-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+}
+
+.multi-option-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 0.45rem;
+  background: var(--surface);
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.booking-summary {
+  position: sticky;
+  top: 6rem;
+}
+
+.booking-summary h2 {
+  margin: 0 0 1.5rem;
+}
+
+dl {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.75rem;
+}
+
+dt {
+  color: var(--muted);
+}
+
+dd {
+  margin: 0;
+  font-weight: 700;
+  text-align: right;
+}
+
+.summary-actions {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 1.5rem;
+  text-align: center;
+}
+
+.summary-actions app-button {
+  display: block;
+}
+
+.summary-actions .cancel-link {
+  color: var(--muted);
+}
+
+.summary-actions .cancel-link:hover {
+  color: var(--primary);
+}
+
+.booking-summary app-status-message {
+  display: block;
+  margin-top: 1.25rem;
+}
+
+@media (max-width: 800px) {
+  .booking-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-summary {
+    position: static;
+  }
+}
