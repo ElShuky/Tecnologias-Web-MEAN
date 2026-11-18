@@ -5,6 +5,7 @@ import { ApiResponse } from '../models/api-response.model';
 import { Business, BusinessPersonalization, CreateBusinessRequest } from '../models/business.model';
 import {
   BusinessServiceItem,
+  ServiceAvailability,
   ServiceForm,
   ServiceFormField,
   ServicePayload,
@@ -101,6 +102,26 @@ export class BusinessService {
   ): Observable<ApiResponse<BusinessServiceItem>> {
     return this.http.delete<ApiResponse<BusinessServiceItem>>(
       `/api/gestion/negocios/${encodeURIComponent(businessId)}/servicios/${encodeURIComponent(serviceId)}`,
+    );
+  }
+
+  getServiceAvailability(
+    businessId: string,
+    serviceId: string,
+  ): Observable<ApiResponse<ServiceAvailability[]>> {
+    return this.http.get<ApiResponse<ServiceAvailability[]>>(
+      `/api/gestion/negocios/${encodeURIComponent(businessId)}/servicios/${encodeURIComponent(serviceId)}/disponibilidad`,
+    );
+  }
+
+  saveServiceAvailability(
+    businessId: string,
+    serviceId: string,
+    data: { dias: number[]; horaInicio: string; horaFin: string },
+  ): Observable<ApiResponse<ServiceAvailability>> {
+    return this.http.put<ApiResponse<ServiceAvailability>>(
+      `/api/gestion/negocios/${encodeURIComponent(businessId)}/servicios/${encodeURIComponent(serviceId)}/disponibilidad`,
+      data,
     );
   }
 

@@ -39,3 +39,11 @@ export interface ServicePayload {
   precio: number;
   activo?: boolean;
 }
+
+export interface ServiceAvailability {
+  id?: string;
+  servicioId?: string;
+  dias: number[];
+  horaInicio: string;
+  horaFin: string;
+}

@@ -7,6 +7,7 @@ import { BusinessService } from '../../core/services/business.service';
 import { Business, BusinessPersonalization } from '../../core/models/business.model';
 import {
   BusinessServiceItem,
+  ServiceAvailability,
   ServiceFormField,
   ServiceFormFieldType,
   ServicePayload,
@@ -192,32 +193,94 @@ import { StatusMessage } from '../../shared/ui/status-message/status-message';
           </app-button>
         </app-card>
 
-        <app-card>
-          <strong>Servicios del negocio</strong>
-          <span>Crea nuevos servicios o modifica los existentes.</span>
+        <app-card id="servicios">
+          <strong>Servicios del negocio y horario de atención</strong>
+          <span>
+            Crea nuevos servicios o modifica los existentes, indicando sus días y horas de atención.
+          </span>
           <div class="service-form">
-            <input [(ngModel)]="serviceForm.nombre" placeholder="Nombre del servicio" />
-            <textarea
-              [(ngModel)]="serviceForm.descripcion"
-              rows="2"
-              placeholder="Descripción"
-            ></textarea>
-            <input
-              [(ngModel)]="serviceForm.duracionMin"
-              type="number"
-              min="1"
-              placeholder="Duración en minutos"
-            />
-            <input
-              [(ngModel)]="serviceForm.precio"
-              type="number"
-              min="0"
-              step="1"
-              placeholder="Precio"
-            />
+            <div class="service-form-grid">
+              <label class="upload-field">
+                <span>Nombre del servicio *</span>
+                <input
+                  [(ngModel)]="serviceForm.nombre"
+                  placeholder="Ej. Corte y Barba, Consulta General"
+                />
+              </label>
+
+              <div class="service-numeric-row">
+                <label class="upload-field">
+                  <span>Duración (minutos) *</span>
+                  <input
+                    [(ngModel)]="serviceForm.duracionMin"
+                    type="number"
+                    min="1"
+                    placeholder="30"
+                  />
+                </label>
+
+                <label class="upload-field">
+                  <span>Precio (CLP) *</span>
+                  <input
+                    [(ngModel)]="serviceForm.precio"
+                    type="number"
+                    min="0"
+                    step="1"
+                    placeholder="12000"
+                  />
+                </label>
+              </div>
+            </div>
+
+            <label class="upload-field">
+              <span>Descripción del servicio</span>
+              <textarea
+                [(ngModel)]="serviceForm.descripcion"
+                rows="2"
+                placeholder="Describe qué incluye la atención"
+              ></textarea>
+            </label>
+
+            <div class="availability-box">
+              <div class="availability-header">
+                <strong>Días y horas de atención en que se ofrece el servicio</strong>
+                <small>
+                  Selecciona los días de la semana y el rango horario para generar los bloques de
+                  reserva.
+                </small>
+              </div>
+
+              <div class="days-selector" role="group" aria-label="Días de atención">
+                @for (day of weekDays; track day.value) {
+                  <button
+                    type="button"
+                    class="day-chip"
+                    [class.is-selected]="isDaySelected(day.value)"
+                    (click)="toggleDay(day.value)"
+                  >
+                    {{ day.label }}
+                  </button>
+                }
+              </div>
+
+              <div class="hours-row">
+                <label class="upload-field">
+                  <span>Hora de inicio *</span>
+                  <input type="time" [(ngModel)]="availabilityForm.horaInicio" />
+                </label>
+
+                <label class="upload-field">
+                  <span>Hora de término *</span>
+                  <input type="time" [(ngModel)]="availabilityForm.horaFin" />
+                </label>
+              </div>
+            </div>
+
             <div class="service-actions">
               <app-button (click)="saveService()">
-                {{ editingServiceId() ? 'Guardar cambios' : 'Crear servicio' }}
+                {{
+                  editingServiceId() ? 'Guardar cambios del servicio' : 'Crear servicio y horario'
+                }}
               </app-button>
               @if (editingServiceId()) {
                 <app-button variant="ghost" (click)="resetServiceForm()">Cancelar</app-button>
@@ -230,12 +293,15 @@ import { StatusMessage } from '../../shared/ui/status-message/status-message';
             <div class="managed-services">
               @for (service of services(); track service.id) {
                 <div class="managed-service" [class.is-inactive]="!service.activo">
-                  <div>
+                  <div class="managed-service-info">
                     <strong>{{ service.nombre }}</strong>
-                    <span
-                      >{{ service.duracionMin }} min ·
-                      {{ service.precio | currency: 'CLP' : 'symbol-narrow' : '1.0-0' }}</span
-                    >
+                    <span>
+                      {{ service.duracionMin }} min ·
+                      {{ service.precio | currency: 'CLP' : 'symbol-narrow' : '1.0-0' }}
+                    </span>
+                    <small class="service-schedule-summary">
+                      Horario: {{ formatServiceSchedule(service.id) }}
+                    </small>
                   </div>
                   <div class="service-actions">
                     <a
@@ -245,7 +311,7 @@ import { StatusMessage } from '../../shared/ui/status-message/status-message';
                       Formulario del servicio
                     </a>
                     <button class="text-button" type="button" (click)="editService(service)">
-                      Editar
+                      Editar servicio y horario
                     </button>
                     @if (service.activo) {
                       <button
@@ -442,8 +508,20 @@ export class AdminPanel implements OnInit {
     colorSecundario: null,
   });
   protected readonly services = signal<BusinessServiceItem[]>([]);
+  protected readonly serviceAvailabilities = signal<Record<string, ServiceAvailability>>({});
   protected readonly editingServiceId = signal('');
   protected serviceForm: ServicePayload = this.emptyServiceForm();
+  protected availabilityForm: { dias: number[]; horaInicio: string; horaFin: string } =
+    this.emptyAvailabilityForm();
+  protected readonly weekDays: { value: number; label: string; short: string }[] = [
+    { value: 1, label: 'Lunes', short: 'Lun' },
+    { value: 2, label: 'Martes', short: 'Mar' },
+    { value: 3, label: 'Miércoles', short: 'Mié' },
+    { value: 4, label: 'Jueves', short: 'Jue' },
+    { value: 5, label: 'Viernes', short: 'Vie' },
+    { value: 6, label: 'Sábado', short: 'Sáb' },
+    { value: 0, label: 'Domingo', short: 'Dom' },
+  ];
   protected readonly selectedFormService = signal<BusinessServiceItem | null>(null);
   protected readonly editableFields = signal<EditableFormField[]>([]);
   protected readonly savingServiceForm = signal(false);
@@ -470,7 +548,12 @@ export class AdminPanel implements OnInit {
           this.personalization.set(response.data.personalizacion);
         }
         this.businessService.listManagedServices(businessId).subscribe({
-          next: (services) => this.services.set(services.data),
+          next: (services) => {
+            this.services.set(services.data);
+            for (const srv of services.data) {
+              this.loadAvailabilityForService(businessId, srv.id);
+            }
+          },
           error: (error: ApiErrorResponse) =>
             this.uploadMessage.set(error.error?.message ?? 'No se pudieron cargar los servicios.'),
         });
@@ -614,16 +697,83 @@ export class AdminPanel implements OnInit {
       precio: service.precio,
       activo: service.activo,
     };
+    const existingAvail = this.serviceAvailabilities()[service.id];
+    if (existingAvail) {
+      this.availabilityForm = {
+        dias: [...existingAvail.dias],
+        horaInicio: existingAvail.horaInicio,
+        horaFin: existingAvail.horaFin,
+      };
+    } else {
+      const businessId = this.auth.currentUser()?.negocioId;
+      if (businessId) {
+        this.businessService.getServiceAvailability(businessId, service.id).subscribe({
+          next: (res) => {
+            const first = res.data[0];
+            if (first) {
+              this.serviceAvailabilities.update((curr) => ({ ...curr, [service.id]: first }));
+              this.availabilityForm = {
+                dias: [...first.dias],
+                horaInicio: first.horaInicio,
+                horaFin: first.horaFin,
+              };
+            } else {
+              this.availabilityForm = this.emptyAvailabilityForm();
+            }
+          },
+        });
+      }
+    }
   }
 
   protected resetServiceForm(): void {
     this.editingServiceId.set('');
     this.serviceForm = this.emptyServiceForm();
+    this.availabilityForm = this.emptyAvailabilityForm();
+  }
+
+  protected isDaySelected(dayValue: number): boolean {
+    return this.availabilityForm.dias.includes(dayValue);
+  }
+
+  protected toggleDay(dayValue: number): void {
+    const exists = this.availabilityForm.dias.includes(dayValue);
+    this.availabilityForm = {
+      ...this.availabilityForm,
+      dias: exists
+        ? this.availabilityForm.dias.filter((d) => d !== dayValue)
+        : [...this.availabilityForm.dias, dayValue].sort((a, b) => a - b),
+    };
+  }
+
+  protected formatServiceSchedule(serviceId: string): string {
+    const avail = this.serviceAvailabilities()[serviceId];
+    if (!avail || !avail.dias || avail.dias.length === 0) {
+      return 'Sin horario configurado';
+    }
+    const dayMap = new Map(this.weekDays.map((d) => [d.value, d.short]));
+    const labels = avail.dias.map((d) => dayMap.get(d) || String(d)).join(', ');
+    return `${labels} · ${avail.horaInicio} a ${avail.horaFin}`;
   }
 
   protected saveService(): void {
     const businessId = this.auth.currentUser()?.negocioId;
     if (!businessId) return;
+
+    if (this.availabilityForm.dias.length === 0) {
+      this.uploadMessage.set('Selecciona al menos un día de atención para el servicio.');
+      return;
+    }
+    if (
+      !this.availabilityForm.horaInicio ||
+      !this.availabilityForm.horaFin ||
+      this.availabilityForm.horaFin <= this.availabilityForm.horaInicio
+    ) {
+      this.uploadMessage.set('La hora de término debe ser posterior a la hora de inicio.');
+      return;
+    }
+
+    const isEditing = Boolean(this.editingServiceId());
     const payload: ServicePayload = {
       nombre: this.serviceForm.nombre.trim(),
       descripcion: this.serviceForm.descripcion.trim(),
@@ -631,23 +781,47 @@ export class AdminPanel implements OnInit {
       precio: Number(this.serviceForm.precio),
       ...(this.serviceForm.activo !== undefined ? { activo: this.serviceForm.activo } : {}),
     };
-    const request = this.editingServiceId()
+    const availabilityPayload = {
+      dias: [...this.availabilityForm.dias],
+      horaInicio: this.availabilityForm.horaInicio,
+      horaFin: this.availabilityForm.horaFin,
+    };
+
+    const request = isEditing
       ? this.businessService.updateService(businessId, this.editingServiceId(), payload)
       : this.businessService.createService(businessId, payload);
     request.subscribe({
       next: (response) => {
+        const savedService = response.data;
         this.services.update((items) => {
-          const exists = items.some((item) => item.id === response.data.id);
+          const exists = items.some((item) => item.id === savedService.id);
           return exists
-            ? items.map((item) => (item.id === response.data.id ? response.data : item))
-            : [...items, response.data];
+            ? items.map((item) => (item.id === savedService.id ? savedService : item))
+            : [...items, savedService];
         });
-        this.uploadMessage.set(
-          this.editingServiceId()
-            ? 'Servicio actualizado correctamente.'
-            : 'Servicio creado correctamente.',
-        );
-        this.resetServiceForm();
+
+        this.businessService
+          .saveServiceAvailability(businessId, savedService.id, availabilityPayload)
+          .subscribe({
+            next: (availRes) => {
+              this.serviceAvailabilities.update((curr) => ({
+                ...curr,
+                [savedService.id]: availRes.data,
+              }));
+              this.uploadMessage.set(
+                isEditing
+                  ? 'Servicio y horario de atención actualizados correctamente.'
+                  : 'Servicio y horario de atención creados correctamente.',
+              );
+              this.resetServiceForm();
+            },
+            error: (error: ApiErrorResponse) => {
+              this.uploadMessage.set(
+                error.error?.message ??
+                  'El servicio se guardó, pero hubo un error al guardar el horario de atención.',
+              );
+            },
+          });
       },
       error: (error: ApiErrorResponse) =>
         this.uploadMessage.set(error.error?.message ?? 'No se pudo guardar el servicio.'),
@@ -671,6 +845,21 @@ export class AdminPanel implements OnInit {
 
   private emptyServiceForm(): ServicePayload {
     return { nombre: '', descripcion: '', duracionMin: 30, precio: 0 };
+  }
+
+  private emptyAvailabilityForm(): { dias: number[]; horaInicio: string; horaFin: string } {
+    return { dias: [1, 2, 3, 4, 5], horaInicio: '09:00', horaFin: '18:00' };
+  }
+
+  private loadAvailabilityForService(businessId: string, serviceId: string): void {
+    this.businessService.getServiceAvailability(businessId, serviceId).subscribe({
+      next: (res) => {
+        const first = res.data[0];
+        if (first) {
+          this.serviceAvailabilities.update((curr) => ({ ...curr, [serviceId]: first }));
+        }
+      },
+    });
   }
 
   protected openServiceFormBuilder(service: BusinessServiceItem): void {
