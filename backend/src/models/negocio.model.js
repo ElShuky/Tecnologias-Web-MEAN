@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { cleanRubroLabel, normalizeRubroKey } = require('../utils/rubro.util');
 
 const negocioSchema = new mongoose.Schema(
   {
@@ -12,6 +13,13 @@ const negocioSchema = new mongoose.Schema(
       type: String,
       required: [true, 'El rubro del negocio es requerido.'],
       trim: true,
+    },
+    rubroNormalizado: {
+      type: String,
+      default: '',
+      lowercase: true,
+      trim: true,
+      index: true,
     },
     slug: {
       type: String,
@@ -63,6 +71,13 @@ const negocioSchema = new mongoose.Schema(
     timestamps: { createdAt: 'creadoEn', updatedAt: 'actualizadoEn' },
   },
 );
+
+negocioSchema.pre('validate', function () {
+  if (typeof this.rubro === 'string') {
+    this.rubro = cleanRubroLabel(this.rubro);
+    this.rubroNormalizado = normalizeRubroKey(this.rubro);
+  }
+});
 
 const Negocio = mongoose.models.Negocio || mongoose.model('Negocio', negocioSchema);
 

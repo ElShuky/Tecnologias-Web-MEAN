@@ -26,6 +26,15 @@ async function listar(req, res, next) {
   }
 }
 
+async function listarRubros(_req, res, next) {
+  try {
+    const rubros = await negocioService.listarRubros();
+    return res.json({ success: true, data: rubros });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 async function obtenerPorSlug(req, res, next) {
   try {
     const negocio = await negocioService.obtenerNegocioPublico(req.params.slug);
@@ -53,6 +62,7 @@ async function obtenerPorId(req, res, next) {
 module.exports = {
   registrar,
   listar,
+  listarRubros,
   obtenerPorSlug,
   obtenerPorId,
 };

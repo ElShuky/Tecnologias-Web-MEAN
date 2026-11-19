@@ -33,6 +33,7 @@ router.post(
   imagenController.cargar,
 );
 router.get('/', negocioController.listar);
+router.get('/rubros', negocioController.listarRubros);
 router.get('/:slug', negocioController.obtenerPorSlug);
 
 module.exports = router;

@@ -1,7 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
-import { Business } from '../../core/models/business.model';
+import { Business, BusinessRubro } from '../../core/models/business.model';
 import { ApiErrorResponse } from '../../core/models/api-response.model';
 import { BusinessService } from '../../core/services/business.service';
 import { Button } from '../../shared/ui/button/button';
@@ -29,11 +29,11 @@ import { StatusMessage } from '../../shared/ui/status-message/status-message';
           />
         </app-form-field>
         <app-form-field label="Rubro">
-          <select [(ngModel)]="category" name="category">
+          <select [(ngModel)]="category" name="category" (change)="search()">
             <option value="">Todos los rubros</option>
-            <option value="Salud">Salud</option>
-            <option value="Estética">Estética</option>
-            <option value="Servicios profesionales">Servicios profesionales</option>
+            @for (rubro of rubros(); track rubro.clave) {
+              <option [value]="rubro.clave">{{ rubro.nombre }}</option>
+            }
           </select>
         </app-form-field>
         <app-button type="submit">Buscar negocios</app-button>
@@ -105,13 +105,26 @@ import { StatusMessage } from '../../shared/ui/status-message/status-message';
 export class BusinessDirectory implements OnInit {
   private readonly businessService = inject(BusinessService);
   protected readonly businesses = signal<Business[]>([]);
+  protected readonly rubros = signal<BusinessRubro[]>([]);
   protected readonly loading = signal(true);
   protected readonly errorMessage = signal('');
   protected searchTerm = '';
   protected category = '';
 
   ngOnInit(): void {
+    this.loadRubros();
     this.search();
+  }
+
+  protected loadRubros(): void {
+    this.businessService.listRubros().subscribe({
+      next: (response) => {
+        this.rubros.set(response.data);
+      },
+      error: () => {
+        this.rubros.set([]);
+      },
+    });
   }
 
   protected search(): void {

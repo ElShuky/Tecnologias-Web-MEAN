@@ -7,8 +7,9 @@ const zlib = require('node:zlib');
 const mongoose = require('mongoose');
 const { readConfig } = require('./config');
 const { connectDatabase } = require('./database');
-const { Negocio, Usuario, Servicio, Disponibilidad } = require('./models');
+const { Negocio, Rubro, Usuario, Servicio, Disponibilidad } = require('./models');
 const formularioService = require('./services/formulario.service');
+const { normalizeRubroKey } = require('./utils/rubro.util');
 
 const DEMO_PASSWORD = 'Password123';
 const SALT_ROUNDS = 10;
@@ -119,6 +120,7 @@ async function seedDemoData() {
         $setOnInsert: {
           nombre: 'Barbería Central',
           rubro: 'Estética',
+          rubroNormalizado: normalizeRubroKey('Estética'),
           slug: 'barberia-central',
           descripcion: 'Cortes clásicos, perfilado de barba y cuidado personal.',
           activo: true,
@@ -139,6 +141,7 @@ async function seedDemoData() {
       {
         $set: {
           activo: true,
+          rubroNormalizado: normalizeRubroKey(negocio.rubro),
           logoUrl: currentLogo,
           portadaUrl: currentPortada,
           personalizacion: {
@@ -150,6 +153,17 @@ async function seedDemoData() {
         },
       },
       { returnDocument: 'after' },
+    );
+
+    await Rubro.findOneAndUpdate(
+      { claveNormalizada: normalizeRubroKey('Estética') },
+      {
+        $setOnInsert: {
+          nombre: 'Estética',
+          claveNormalizada: normalizeRubroKey('Estética'),
+        },
+      },
+      { upsert: true, returnDocument: 'after', runValidators: true, setDefaultsOnInsert: true },
     );
 
     const servicio = await Servicio.findOneAndUpdate(

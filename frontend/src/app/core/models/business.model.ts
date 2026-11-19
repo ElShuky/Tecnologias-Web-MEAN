@@ -17,6 +17,11 @@ export interface BusinessPersonalization {
   colorSecundario: string | null;
 }
 
+export interface BusinessRubro {
+  clave: string;
+  nombre: string;
+}
+
 export interface CreateBusinessRequest {
   nombre: string;
   rubro: string;

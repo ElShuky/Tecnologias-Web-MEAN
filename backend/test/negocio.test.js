@@ -6,7 +6,7 @@ const mongoose = require('mongoose');
 const request = require('supertest');
 
 const app = require('../src/server');
-const { Negocio, Usuario } = require('../src/models');
+const { Negocio, Rubro, Usuario } = require('../src/models');
 
 const TEST_MONGODB_URI =
   process.env.MONGODB_URI || 'mongodb://localhost:27017/reservas_test_negocios';
@@ -15,6 +15,7 @@ const JWT_SECRET = process.env.JWT_SECRET || 'desarrollo-local-secreto-seguro-12
 before(async () => {
   await mongoose.connect(TEST_MONGODB_URI, { serverSelectionTimeoutMS: 5000 });
   await Negocio.syncIndexes();
+  await Rubro.syncIndexes();
   await Usuario.syncIndexes();
 });
 
@@ -25,6 +26,7 @@ after(async () => {
 
 beforeEach(async () => {
   await Negocio.deleteMany({});
+  await Rubro.deleteMany({});
   await Usuario.deleteMany({});
 });
 
@@ -134,4 +136,120 @@ test('GET /api/negocios y GET /api/negocios/:slug devuelven solo negocios activo
   assert.equal(detalle.body.data.adminCorreo, undefined);
 
   await request(app).get('/api/negocios/barberia-oculta').expect(404);
+});
+
+test('Los rubros agrupan variaciones de tildes, mayúsculas, espacios, plurales y crean nuevos rubros en GET /api/negocios/rubros', async () => {
+  const token = superadminToken();
+
+  await request(app)
+    .post('/api/negocios')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      nombre: 'Estética Bella',
+      rubro: 'Estética',
+      slug: 'estetica-bella',
+      adminNombre: 'Admin Uno',
+      adminCorreo: 'admin1@estetica.cl',
+      adminPassword: 'Password123',
+    })
+    .expect(201);
+
+  await request(app)
+    .post('/api/negocios')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      nombre: 'Centro Estético Norte',
+      rubro: '  estetico  ',
+      slug: 'centro-estetico-norte',
+      adminNombre: 'Admin Dos',
+      adminCorreo: 'admin2@estetica.cl',
+      adminPassword: 'Password123',
+    })
+    .expect(201);
+
+  await request(app)
+    .post('/api/negocios')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      nombre: 'Servicios Estéticos Sur',
+      rubro: 'ESTÉTICOS',
+      slug: 'servicios-esteticos-sur',
+      adminNombre: 'Admin Tres',
+      adminCorreo: 'admin3@estetica.cl',
+      adminPassword: 'Password123',
+    })
+    .expect(201);
+
+  const rubrosIniciales = await request(app).get('/api/negocios/rubros').expect(200);
+  assert.deepEqual(rubrosIniciales.body.data, [{ clave: 'estetico', nombre: 'Estética' }]);
+  assert.equal(await Rubro.countDocuments({ claveNormalizada: 'estetico' }), 1);
+
+  for (const queryRubro of ['Estética', 'estetico', '  ESTÉTICOS  ', 'estetica']) {
+    const res = await request(app).get('/api/negocios').query({ rubro: queryRubro }).expect(200);
+    assert.equal(res.body.data.length, 3);
+  }
+
+  const combinado = await request(app)
+    .get('/api/negocios')
+    .query({ search: 'Norte', rubro: 'esteticos' })
+    .expect(200);
+  assert.equal(combinado.body.data.length, 1);
+  assert.equal(combinado.body.data[0].slug, 'centro-estetico-norte');
+
+  await request(app)
+    .post('/api/negocios')
+    .set('Authorization', `Bearer ${token}`)
+    .send({
+      nombre: 'Patitas Felices',
+      rubro: '  veterinaria  ',
+      slug: 'patitas-felices',
+      adminNombre: 'Admin Vet',
+      adminCorreo: 'admin@vet.cl',
+      adminPassword: 'Password123',
+    })
+    .expect(201);
+
+  await Negocio.create({
+    nombre: 'Negocio Inactivo',
+    rubro: 'Automotriz',
+    slug: 'negocio-inactivo',
+    activo: false,
+  });
+
+  const rubrosActualizados = await request(app).get('/api/negocios/rubros').expect(200);
+  assert.deepEqual(rubrosActualizados.body.data, [
+    { clave: 'estetico', nombre: 'Estética' },
+    { clave: 'veterinario', nombre: 'Veterinaria' },
+  ]);
+
+  const filtradosVet = await request(app)
+    .get('/api/negocios')
+    .query({ rubro: 'veterinarios' })
+    .expect(200);
+  assert.equal(filtradosVet.body.data.length, 1);
+  assert.equal(filtradosVet.body.data[0].slug, 'patitas-felices');
+});
+
+test('Negocios heredados sin rubroNormalizado aparecen en rubros y responden al filtro normalizado', async () => {
+  await Negocio.collection.insertOne({
+    nombre: 'Taller Legacy',
+    rubro: '  talleres mecanicos ',
+    slug: 'taller-legacy',
+    descripcion: 'Mecánica general.',
+    activo: true,
+    creadoEn: new Date(),
+    actualizadoEn: new Date(),
+  });
+
+  const rubrosRes = await request(app).get('/api/negocios/rubros').expect(200);
+  assert.equal(rubrosRes.body.data.length, 1);
+  assert.equal(rubrosRes.body.data[0].clave, 'taller mecanico');
+  assert.equal(rubrosRes.body.data[0].nombre, 'Talleres mecanicos');
+
+  const filtrados = await request(app)
+    .get('/api/negocios')
+    .query({ rubro: 'Taller Mecánico' })
+    .expect(200);
+  assert.equal(filtrados.body.data.length, 1);
+  assert.equal(filtrados.body.data[0].slug, 'taller-legacy');
 });

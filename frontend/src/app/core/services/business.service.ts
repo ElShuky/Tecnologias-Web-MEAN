@@ -2,7 +2,12 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { ApiResponse } from '../models/api-response.model';
-import { Business, BusinessPersonalization, CreateBusinessRequest } from '../models/business.model';
+import {
+  Business,
+  BusinessPersonalization,
+  BusinessRubro,
+  CreateBusinessRequest,
+} from '../models/business.model';
 import {
   BusinessServiceItem,
   ServiceAvailability,
@@ -20,6 +25,10 @@ export class BusinessService {
     if (search.trim()) params = params.set('search', search.trim());
     if (rubro.trim()) params = params.set('rubro', rubro.trim());
     return this.http.get<ApiResponse<Business[]>>('/api/negocios', { params });
+  }
+
+  listRubros(): Observable<ApiResponse<BusinessRubro[]>> {
+    return this.http.get<ApiResponse<BusinessRubro[]>>('/api/negocios/rubros');
   }
 
   getForManagement(businessId: string): Observable<ApiResponse<Business>> {

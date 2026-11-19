@@ -1,8 +1,14 @@
 const bcrypt = require('bcrypt');
 const mongoose = require('mongoose');
-const { Negocio, Usuario } = require('../models');
+const { Negocio, Rubro, Usuario } = require('../models');
 const { readConfig } = require('../config');
 const { ValidationError, ConflictError } = require('../errors/app.error');
+const {
+  cleanRubroLabel,
+  formatRubroLabel,
+  hasDiacritics,
+  normalizeRubroKey,
+} = require('../utils/rubro.util');
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SLUG_REGEX = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
@@ -28,6 +34,53 @@ function publicBusiness(negocio) {
   };
 }
 
+async function resolveOrCreateRubro(rawRubro, session) {
+  const clave = normalizeRubroKey(rawRubro);
+  let canonicalNombre = formatRubroLabel(rawRubro);
+
+  const existente = await Rubro.findOne({ claveNormalizada: clave }).session(session);
+  if (existente) {
+    return existente;
+  }
+
+  const legacyNegocios = await Negocio.find({ activo: true })
+    .select('rubro rubroNormalizado')
+    .sort({ creadoEn: 1 })
+    .session(session)
+    .lean();
+  const matches = legacyNegocios.filter(
+    (item) => normalizeRubroKey(item.rubroNormalizado || item.rubro) === clave,
+  );
+  if (matches.length > 0) {
+    const preferred = matches.find((item) => hasDiacritics(item.rubro)) || matches[0];
+    canonicalNombre = formatRubroLabel(preferred.rubro) || canonicalNombre;
+  }
+
+  try {
+    return await Rubro.findOneAndUpdate(
+      { claveNormalizada: clave },
+      {
+        $setOnInsert: {
+          nombre: canonicalNombre,
+          claveNormalizada: clave,
+        },
+      },
+      {
+        upsert: true,
+        returnDocument: 'after',
+        runValidators: true,
+        setDefaultsOnInsert: true,
+        session,
+      },
+    );
+  } catch (error) {
+    if (error.code === 11000 && error.keyPattern?.claveNormalizada) {
+      return Rubro.findOne({ claveNormalizada: clave }).session(session);
+    }
+    throw error;
+  }
+}
+
 async function registrarNegocio({
   nombre,
   rubro,
@@ -41,7 +94,12 @@ async function registrarNegocio({
   if (!nombre || typeof nombre !== 'string' || nombre.trim().length < 2) {
     details.push({ field: 'nombre', message: 'El nombre debe tener al menos 2 caracteres.' });
   }
-  if (!rubro || typeof rubro !== 'string' || rubro.trim().length < 2) {
+  if (
+    !rubro ||
+    typeof rubro !== 'string' ||
+    cleanRubroLabel(rubro).length < 2 ||
+    normalizeRubroKey(rubro).length < 2
+  ) {
     details.push({ field: 'rubro', message: 'El rubro es requerido.' });
   }
   if (!slug || typeof slug !== 'string' || !SLUG_REGEX.test(slug.trim().toLowerCase())) {
@@ -68,16 +126,19 @@ async function registrarNegocio({
 
   const normalizedSlug = slug.trim().toLowerCase();
   const normalizedEmail = adminCorreo.trim().toLowerCase();
+  await Rubro.init();
   const session = await mongoose.startSession();
 
   try {
     let negocioCreado;
     await session.withTransaction(async () => {
+      const rubroDoc = await resolveOrCreateRubro(rubro, session);
       const [negocio] = await Negocio.create(
         [
           {
             nombre: nombre.trim(),
-            rubro: rubro.trim(),
+            rubro: rubroDoc.nombre,
+            rubroNormalizado: rubroDoc.claveNormalizada,
             slug: normalizedSlug,
             descripcion: descripcion || '',
           },
@@ -117,25 +178,112 @@ async function registrarNegocio({
 }
 
 async function listarNegocios({ search, rubro } = {}) {
-  const filter = { activo: true };
+  const conditions = [{ activo: true }];
   if (typeof search === 'string' && search.trim()) {
     const escapedSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    filter.$or = [
-      { nombre: { $regex: escapedSearch, $options: 'i' } },
-      { descripcion: { $regex: escapedSearch, $options: 'i' } },
-    ];
+    conditions.push({
+      $or: [
+        { nombre: { $regex: escapedSearch, $options: 'i' } },
+        { descripcion: { $regex: escapedSearch, $options: 'i' } },
+      ],
+    });
   }
+
+  let normalizedRubro = '';
   if (typeof rubro === 'string' && rubro.trim()) {
-    filter.rubro = {
-      $regex: `^${rubro.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`,
-      $options: 'i',
-    };
+    normalizedRubro = normalizeRubroKey(rubro);
+    if (!normalizedRubro) {
+      return [];
+    }
+    conditions.push({
+      $or: [
+        { rubroNormalizado: normalizedRubro },
+        { rubroNormalizado: { $exists: false } },
+        { rubroNormalizado: null },
+        { rubroNormalizado: '' },
+      ],
+    });
   }
+
+  const filter = conditions.length === 1 ? conditions[0] : { $and: conditions };
   const negocios = await Negocio.find(filter)
-    .select('nombre rubro slug descripcion logoUrl portadaUrl personalizacion')
+    .select('nombre rubro rubroNormalizado slug descripcion logoUrl portadaUrl personalizacion')
     .sort({ nombre: 1 })
     .lean();
-  return negocios.map(publicBusiness);
+
+  const matched = normalizedRubro
+    ? negocios.filter(
+        (negocio) =>
+          normalizeRubroKey(negocio.rubroNormalizado || negocio.rubro) === normalizedRubro,
+      )
+    : negocios;
+
+  return matched.map(publicBusiness);
+}
+
+async function listarRubros() {
+  const [negociosActivos, rubrosCatalogo] = await Promise.all([
+    Negocio.find({ activo: true }).select('rubro rubroNormalizado').sort({ creadoEn: 1 }).lean(),
+    Rubro.find().select('nombre claveNormalizada').lean(),
+  ]);
+
+  const rubrosPorClave = new Map();
+  for (const rubro of rubrosCatalogo) {
+    if (rubro.claveNormalizada && rubro.nombre) {
+      rubrosPorClave.set(rubro.claveNormalizada, rubro.nombre);
+    }
+  }
+
+  const activosPorClave = new Map();
+  const faltantesEnCatalogo = new Map();
+
+  for (const negocio of negociosActivos) {
+    const clave = normalizeRubroKey(negocio.rubroNormalizado || negocio.rubro);
+    if (!clave) {
+      continue;
+    }
+
+    if (rubrosPorClave.has(clave)) {
+      activosPorClave.set(clave, rubrosPorClave.get(clave));
+      continue;
+    }
+
+    const candidato = formatRubroLabel(negocio.rubro);
+    if (!candidato) {
+      continue;
+    }
+
+    const actual = activosPorClave.get(clave);
+    if (!actual || (!hasDiacritics(actual) && hasDiacritics(candidato))) {
+      activosPorClave.set(clave, candidato);
+      faltantesEnCatalogo.set(clave, candidato);
+    }
+  }
+
+  if (faltantesEnCatalogo.size > 0) {
+    await Promise.all(
+      Array.from(faltantesEnCatalogo.entries()).map(([clave, nombre]) =>
+        Rubro.findOneAndUpdate(
+          { claveNormalizada: clave },
+          { $setOnInsert: { nombre, claveNormalizada: clave } },
+          {
+            upsert: true,
+            returnDocument: 'after',
+            runValidators: true,
+            setDefaultsOnInsert: true,
+          },
+        ).catch((error) => {
+          if (error.code !== 11000) {
+            throw error;
+          }
+        }),
+      ),
+    );
+  }
+
+  return Array.from(activosPorClave.entries())
+    .map(([clave, nombre]) => ({ clave, nombre }))
+    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
 }
 
 async function obtenerNegocioPublico(slug) {
@@ -155,6 +303,7 @@ async function obtenerNegocioPorId(negocioId) {
 module.exports = {
   registrarNegocio,
   listarNegocios,
+  listarRubros,
   obtenerNegocioPublico,
   obtenerNegocioPorId,
 };

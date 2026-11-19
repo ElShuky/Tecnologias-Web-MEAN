@@ -1,8 +1,8 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, OnInit, signal } from '@angular/core';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BusinessService } from '../../core/services/business.service';
-import { Business } from '../../core/models/business.model';
+import { Business, BusinessRubro } from '../../core/models/business.model';
 import { ApiErrorResponse } from '../../core/models/api-response.model';
 import { Button } from '../../shared/ui/button/button';
 import { Card } from '../../shared/ui/card/card';
@@ -45,9 +45,22 @@ import { StatusMessage } from '../../shared/ui/status-message/status-message';
           <app-form-field label="Nombre del negocio">
             <input formControlName="nombre" type="text" placeholder="Barbería Central" />
           </app-form-field>
-          <app-form-field label="Rubro">
-            <input formControlName="rubro" type="text" placeholder="Estética" />
+          <app-form-field
+            label="Rubro"
+            hint="Puedes elegir un rubro existente o escribir uno nuevo."
+          >
+            <input
+              formControlName="rubro"
+              type="text"
+              list="rubros-sugeridos"
+              placeholder="Estética"
+            />
           </app-form-field>
+          <datalist id="rubros-sugeridos">
+            @for (rubro of rubros(); track rubro.clave) {
+              <option [value]="rubro.nombre"></option>
+            }
+          </datalist>
           <app-form-field
             label="Slug"
             hint="Se usará en el enlace público. Ejemplo: barberia-central"
@@ -81,12 +94,13 @@ import { StatusMessage } from '../../shared/ui/status-message/status-message';
   `,
   styleUrl: './business-register.scss',
 })
-export class BusinessRegister {
+export class BusinessRegister implements OnInit {
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly businessService = inject(BusinessService);
   protected readonly submitting = signal(false);
   protected readonly errorMessage = signal('');
   protected readonly createdBusiness = signal<Business | null>(null);
+  protected readonly rubros = signal<BusinessRubro[]>([]);
 
   protected readonly form = this.formBuilder.group({
     nombre: ['', [Validators.required, Validators.minLength(2)]],
@@ -97,6 +111,21 @@ export class BusinessRegister {
     adminCorreo: ['', [Validators.required, Validators.email]],
     adminPassword: ['', [Validators.required, Validators.minLength(8)]],
   });
+
+  ngOnInit(): void {
+    this.loadRubros();
+  }
+
+  protected loadRubros(): void {
+    this.businessService.listRubros().subscribe({
+      next: (response) => {
+        this.rubros.set(response.data);
+      },
+      error: () => {
+        this.rubros.set([]);
+      },
+    });
+  }
 
   protected submit(): void {
     this.errorMessage.set('');
@@ -109,6 +138,7 @@ export class BusinessRegister {
       next: (response) => {
         this.createdBusiness.set(response.data);
         this.submitting.set(false);
+        this.loadRubros();
       },
       error: (error: ApiErrorResponse) => {
         this.errorMessage.set(error.error?.message ?? 'No se pudo registrar el negocio.');

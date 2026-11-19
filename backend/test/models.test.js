@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 
 // Verificación de importación individual y centralizada
 const NegocioDirecto = require('../src/models/negocio.model');
+const RubroDirecto = require('../src/models/rubro.model');
 const UsuarioDirecto = require('../src/models/usuario.model');
 const ServicioDirecto = require('../src/models/servicio.model');
 const DisponibilidadDirecto = require('../src/models/disponibilidad.model');
@@ -12,6 +13,7 @@ const SeguimientoDirecto = require('../src/models/seguimiento.model');
 
 const {
   Negocio,
+  Rubro,
   Usuario,
   Servicio,
   Disponibilidad,
@@ -21,6 +23,7 @@ const {
 
 test('Los modelos se pueden importar tanto individualmente como desde models/index.js', () => {
   assert.equal(Negocio, NegocioDirecto);
+  assert.equal(Rubro, RubroDirecto);
   assert.equal(Usuario, UsuarioDirecto);
   assert.equal(Servicio, ServicioDirecto);
   assert.equal(Disponibilidad, DisponibilidadDirecto);
@@ -28,6 +31,7 @@ test('Los modelos se pueden importar tanto individualmente como desde models/ind
   assert.equal(Seguimiento, SeguimientoDirecto);
 
   assert.equal(typeof Negocio, 'function');
+  assert.equal(typeof Rubro, 'function');
   assert.equal(typeof Usuario, 'function');
   assert.equal(typeof Servicio, 'function');
   assert.equal(typeof Disponibilidad, 'function');
@@ -35,6 +39,7 @@ test('Los modelos se pueden importar tanto individualmente como desde models/ind
   assert.equal(typeof Seguimiento, 'function');
 
   assert.equal(Negocio.modelName, 'Negocio');
+  assert.equal(Rubro.modelName, 'Rubro');
   assert.equal(Usuario.modelName, 'Usuario');
   assert.equal(Servicio.modelName, 'Servicio');
   assert.equal(Disponibilidad.modelName, 'Disponibilidad');
@@ -59,7 +64,7 @@ test('Las referencias entre entidades están correctamente configuradas', () => 
 });
 
 test('Todos los modelos configuran timestamps mapeados a creadoEn y actualizadoEn', () => {
-  const modelos = [Negocio, Usuario, Servicio, Disponibilidad, Reserva, Seguimiento];
+  const modelos = [Negocio, Rubro, Usuario, Servicio, Disponibilidad, Reserva, Seguimiento];
   for (const modelo of modelos) {
     const timestamps = modelo.schema.options.timestamps;
     assert.ok(timestamps, `El modelo ${modelo.modelName} debe definir timestamps.`);
@@ -106,6 +111,30 @@ test('Negocio falla si faltan campos obligatorios o el slug es inválido', async
   });
   const errorNombre = await negocioNombreCorto.validate().catch((err) => err);
   assert.ok(errorNombre.errors.nombre);
+});
+
+test('Negocio normaliza espacios y clave del rubro al validar', async () => {
+  const negocio = new Negocio({
+    nombre: 'Estudio Vital',
+    rubro: '  Estéticos   integrales  ',
+    slug: 'estudio-vital',
+  });
+
+  await assert.doesNotReject(negocio.validate());
+  assert.equal(negocio.rubro, 'Estéticos integrales');
+  assert.equal(negocio.rubroNormalizado, 'estetico integral');
+});
+
+test('Rubro formatea nombre, calcula claveNormalizada y rechaza valores vacíos', async () => {
+  const rubroValido = new Rubro({ nombre: '  veterinarias  ' });
+  await assert.doesNotReject(rubroValido.validate());
+  assert.equal(rubroValido.nombre, 'Veterinarias');
+  assert.equal(rubroValido.claveNormalizada, 'veterinario');
+
+  const rubroVacio = new Rubro({ nombre: '   ' });
+  const errorVacio = await rubroVacio.validate().catch((err) => err);
+  assert.ok(errorVacio.errors.nombre);
+  assert.ok(errorVacio.errors.claveNormalizada);
 });
 
 // ==========================================

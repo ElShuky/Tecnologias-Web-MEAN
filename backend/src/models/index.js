@@ -1,4 +1,5 @@
 const Negocio = require('./negocio.model');
+const Rubro = require('./rubro.model');
 const Usuario = require('./usuario.model');
 const Servicio = require('./servicio.model');
 const Disponibilidad = require('./disponibilidad.model');
@@ -7,6 +8,7 @@ const Seguimiento = require('./seguimiento.model');
 
 module.exports = {
   Negocio,
+  Rubro,
   Usuario,
   Servicio,
   Disponibilidad,
